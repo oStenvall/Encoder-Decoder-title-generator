@@ -18,7 +18,4 @@ class EncoderDecoder(nn.Module):
 
     def decode(self, src, max_len):
         encoder_output, hidden = self.encoder(src)
-        print("Encoder output: " + str(encoder_output.shape))
-        print("Encoder hidden: " + str(hidden.shape))
-        print("Max len: " + str(max_len))
         return self.decoder.decode(encoder_output, hidden, src != 0, max_len)

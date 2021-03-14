@@ -1,3 +1,6 @@
+import torch
+
+
 class QnABatcher(object):
 
     def __init__(self, device):
@@ -5,6 +8,7 @@ class QnABatcher(object):
 
     def __call__(self, batch):
         srcs, tgts = zip(*batch)
+        S = torch.LongTensor(srcs)
+        T = torch.LongTensor(tgts)
 
-
-        return srcs.to(self.device), tgts.to(self.device)
+        return S.to(self.device), T.to(self.device)

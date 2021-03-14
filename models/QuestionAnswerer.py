@@ -1,3 +1,5 @@
+import pdb
+
 import torch
 
 from models.EncoderDecoder import EncoderDecoder
@@ -25,12 +27,14 @@ class QuestionAnswerer(object):
         #src = torch.LongTensor([e + [0] * (max_len - len(e)) for e in encoded]).to(self.device)
 
         # Run the decoder and convert the result into nested lists
+        print(max_len)
         with torch.no_grad():
             decoded, alphas = tuple(d.cpu().numpy().tolist() for d in self.model.decode(questions,  max_len))
 
         # Prune each decoded sentence after the first <eos>
-
         result = []
+        dec_res = []
+        dec_res_list = []
         for d, a in zip(decoded, alphas):
             d = [self.i2w[i] for i in d]
             try:
@@ -39,10 +43,21 @@ class QuestionAnswerer(object):
                 del a[eos_index:]
             except:
                 pass
+            dec_res.append([(' '.join(d))])
+            dec_res_list.append(d)
             result.append((' '.join(d), a))
-
-        return result
+        print("Dec res")
+        print(len(dec_res))
+        return dec_res  #, result
 
     def generate_answers(self, questions, max_len):
-        gen_answers, alphas = zip(*self.generate_answers_with_attention(questions, max_len))
-        return gen_answers
+        return self.generate_answers_with_attention(questions, max_len)
+
+    def load(self, path):
+        checkpoint = torch.load(path)
+        self.model = self.model.load_state_dict(checkpoint['enc_dec'])
+        self.device = checkpoint['device']
+        self.src_vocab = checkpoint['src_vocab']
+        self.tgt_vocab = checkpoint['device']
+        self.i2w = checkpoint['i2w']
+

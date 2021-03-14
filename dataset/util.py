@@ -1,4 +1,6 @@
 import math
+import pdb
+
 import pandas as pd
 from bs4 import BeautifulSoup
 from pathlib import Path
@@ -43,7 +45,10 @@ def tokenize(sentence):
 
 
 def add_padding(tokens, max_len):
-    padding = [dataConfig.PAD] * (max_len - len(tokens))
+    if len(tokens) < max_len:
+        padding = [dataConfig.PAD] * (max_len - len(tokens))
+    else:
+        padding = []
     return tokens + padding
 
 
@@ -51,6 +56,7 @@ def extract_question_and_answer(df):
     questions = []
     answers_input = []
     answers_target = []
+    answers_reference = []
     with tqdm(total=df.shape[0]) as pbar:
         for i, row in df.iterrows():
             if i % 1000 == 0:
@@ -70,20 +76,25 @@ def extract_question_and_answer(df):
                 continue
 
             a_tokens_input = [dataConfig.BOS] + a_tokens_input
-            a_tokens_target = a_tokens_target #+ [dataConfig.EOS]
+            reference_a = a_tokens_target #+ [dataConfig.EOS]
+            a_tokens_target += [dataConfig.EOS]
             max_a_len_with_pseudo_word = dataConfig.max_a_len + 1
             if len(a_tokens_input) < max_a_len_with_pseudo_word:
                 a_tokens_input = add_padding(a_tokens_input, max_a_len_with_pseudo_word)
-                #a_tokens_target = add_padding(a_tokens_target, max_a_len_with_pseudo_word)
+            if len(a_tokens_target) < max_a_len_with_pseudo_word:
+                a_tokens_target = add_padding(a_tokens_target, max_a_len_with_pseudo_word)
+
 
             assert len(a_tokens_input) == max_a_len_with_pseudo_word
+            assert len(a_tokens_target) == max_a_len_with_pseudo_word
             assert len(q_tokens) == dataConfig.max_q_len
 
             questions.append(q_tokens)
+            answers_reference.append(reference_a)
             answers_input.append(a_tokens_input)
             answers_target.append(a_tokens_target)
 
-    return questions, answers_input, answers_target
+    return questions, answers_input, answers_target, answers_reference
 
 
 def make_vocab(sequences, max_size):
@@ -106,13 +117,14 @@ def make_vocab(sequences, max_size):
 
 def save_to_pickle():
     df = load_data_into_df()
-    questions, answer_inputs, answer_targets = extract_question_and_answer(df)
+    questions, answer_inputs, answer_targets, ref_a = extract_question_and_answer(df)
     src_vocab = make_vocab(questions, 10000)
     tgt_vocab = make_vocab(answer_inputs, 10000)
 
     pickle_dict = {"questions": questions,
                    "answer_inputs": answer_inputs,
                    "answer_targets": answer_targets,
+                   "ref_a": ref_a,
                    "src_vocab": src_vocab,
                    "tgt_vocab": tgt_vocab}
     with open('../data/data.p', "wb") as fp:
