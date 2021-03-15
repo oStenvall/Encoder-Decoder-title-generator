@@ -27,7 +27,6 @@ class QuestionAnswerer(object):
         #src = torch.LongTensor([e + [0] * (max_len - len(e)) for e in encoded]).to(self.device)
 
         # Run the decoder and convert the result into nested lists
-        print(max_len)
         with torch.no_grad():
             decoded, alphas = tuple(d.cpu().numpy().tolist() for d in self.model.decode(questions,  max_len))
 
@@ -46,8 +45,6 @@ class QuestionAnswerer(object):
             dec_res.append([(' '.join(d))])
             dec_res_list.append(d)
             result.append((' '.join(d), a))
-        print("Dec res")
-        print(len(dec_res))
         return dec_res  #, result
 
     def generate_answers(self, questions, max_len):
