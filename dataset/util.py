@@ -72,7 +72,7 @@ def extract_question_and_answer(df):
                 q_title = tokenize(row.Title)
             except UnicodeEncodeError:
                 continue
-            q_title_ref = q_title
+            q_title
 
             if len(q_title) > dataConfig.max_q_title_len or len(q_title) == 0:
                 continue
@@ -108,7 +108,7 @@ def extract_question_and_answer(df):
             q_titles_bos.append(q_title_bos)
             q_titles_eos.append(q_title_eos)
             q_bodies.append(q_body)
-            q_titles_ref.append(q_title_ref)
+            q_titles_ref.append(q_title)
 
     return q_titles_bos, q_titles_eos, q_bodies, q_titles_ref
 

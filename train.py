@@ -1,16 +1,19 @@
+import os
+from pathlib import Path
+
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 import torch.nn.functional as F
 from dataset.QnABatcher import QnABatcher
-from eval.evalutation import bleu, rouge, run_evaluation
-from models.QuestionAnswerer import QuestionAnswerer
+from eval.evalutation import rouge, run_evaluation
+from models.TitleGenerator import TitleGenerator
 from tqdm import tqdm
 
 
 def train(src_vocab, tgt_vocab, attention, hidden_dim,
           embedding_dim,bidirectional,train_dataset, val_dataset,n_epochs,batch_size, lr=5e-4):
-    question_answerer = QuestionAnswerer(src_vocab, tgt_vocab, attention,
-                                         hidden_dim, embedding_dim, bidirectional)
+    question_answerer = TitleGenerator(src_vocab, tgt_vocab, attention,
+                                       hidden_dim, embedding_dim, bidirectional)
 
     batcher = QnABatcher(question_answerer.device)
     train_loader = DataLoader(train_dataset, batch_size, shuffle=True, collate_fn=batcher)
@@ -47,7 +50,7 @@ def train(src_vocab, tgt_vocab, attention, hidden_dim,
 
                     if i % 100 == 0:
                         question_answerer.model.eval()
-                        rouge_precision_avg, rouge_recall_avg, rouge_f1_avg = rouge(question_answerer, val_dataset)
+                        rouge_precision_avg, rouge_recall_avg, rouge_f1_avg = rouge(question_answerer, val_dataset, "rouge1")
                         sample_input = val_dataset.create_sample_tensor(["how", "do", "i","run", "python"], 100)
                         sample = question_answerer.generate_answers(sample_input, 10)[0]
             if (epoch + 1) % 5 == 0:
@@ -55,7 +58,7 @@ def train(src_vocab, tgt_vocab, attention, hidden_dim,
                     model_name = f'bidirectional_hidden-{hidden_dim}_emb-{embedding_dim}'
                 else:
                     model_name = f'single_hidden-{hidden_dim}_emb-{embedding_dim}'
-                run_evaluation(model_name, "validation.csv",question_answerer,val_dataset, epoch)
+                run_evaluation(model_name, "validation.csv",question_answerer,val_dataset, epoch, ["rouge1", "rouge"])
     except KeyboardInterrupt:
         pass
     return question_answerer

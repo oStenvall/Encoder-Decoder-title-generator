@@ -1,3 +1,5 @@
+import pdb
+
 import torch
 import torch.nn as nn
 
@@ -53,7 +55,8 @@ class Decoder(nn.Module):
             output, hidden, alpha = self.step(encoder_output, hidden, src_mask, prev_embedded)
 
             # Update the list of generated words and attention weights (in each sentence)
-            generated.append(output.argmax(-1))
+            generated = output.argmax(-1)
+            generated.append(generated)
             alphas.append(alpha)
 
         generated = [x.unsqueeze(1) for x in generated[1:]]

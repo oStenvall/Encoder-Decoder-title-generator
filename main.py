@@ -2,14 +2,11 @@ import pickle
 
 import torch
 
-from dataset.QuestionAnswerTestDataset import QuestionAnswerTestDataset
-from dataset.QuestionAnswerTrainDataset import QuestionAnswerTrainDataset
-from dataset.util import save_to_pickle
-from eval.evalutation import run_evaluation
-from models.Decoder import Decoder
-from models.Encoder import Encoder
-from models.attention_models import UniformAttention
-
+from dataset.TitleQuestionTestDataset import TitleQuestionTestDataset
+from dataset.TitleQuestionTrainDataset import TitleQuestionTrainDataset
+from eval.evalutation import run_evaluation, evaluate_random_baseline
+from models.attention_models import BahdanauAttention
+from test_functions import load_models_and_print_example_titles_for_best_models
 from train import train
 
 
@@ -37,9 +34,9 @@ def main():
     q_bodies_test = q_bodies[10000:12328]
     #ref_a_val = ref_a[25000:]
 
-    test_dataset =  QuestionAnswerTestDataset(src_vocab, q_bodies_test, q_titles_ref_test)
-    val_dataset = QuestionAnswerTestDataset(src_vocab, q_bodies_val, q_titles_ref_val)
-    train_dataset = QuestionAnswerTrainDataset(src_vocab, tgt_vocab, q_bodies_train, q_titles_bos_train, q_titles_eos_train)
+    test_dataset = TitleQuestionTestDataset(src_vocab, q_bodies_test, q_titles_ref_test)
+    val_dataset = TitleQuestionTestDataset(src_vocab, q_bodies_val, q_titles_ref_val)
+    train_dataset = TitleQuestionTrainDataset(src_vocab, tgt_vocab, q_bodies_train, q_titles_bos_train, q_titles_eos_train)
     #attention = UniformAttention()
     #enc = Encoder(vocab_size=len(src_vocab))
     #attention = BahdanauAttention()
@@ -47,19 +44,19 @@ def main():
     #print_encoder_decoder_shape(encoder=enc,decoder=dec,dataset=train_dataset,batch_size=10)
 
     hidden_dims = [64, 128, 256]
-    embedding_dims = [50, 100, 150, 200]
+    embedding_dims = [100]
     bidirectional_encoding = True
-    directions = [bidirectional_encoding, not bidirectional_encoding]
+    directions = [not bidirectional_encoding, bidirectional_encoding]
     direction_dict = {True: "bidirectional", False: "single"}
-
-
+    #load_models_and_print_example_titles_for_best_models(src_vocab,tgt_vocab,test_dataset)
+    #load_models_and_calculate_rouge(src_vocab,tgt_vocab, test_dataset)
     #attention = BahdanauAttention(hidden_dim=h, bidirectional_enc=d)
     #qna_bot = QuestionAnswerer(src_vocab, tgt_vocab, attention, h, e, d)
 
     for d in directions:
          for h in hidden_dims:
              for e in embedding_dims:
-                attention = UniformAttention()
+                attention = BahdanauAttention(hidden_dim=h, bidirectional_enc=d)
                 qna_bot = train(src_vocab=src_vocab, tgt_vocab=tgt_vocab, attention=attention,
                                 hidden_dim=h, embedding_dim=e, bidirectional=d,
                                 train_dataset=train_dataset, val_dataset=val_dataset, n_epochs=25,
@@ -74,7 +71,7 @@ def main():
                 print(["what", "is", "<", "operator", "in", "python" ,"?"])
                 print(qna_bot.generate_answers(sample_input, 10))
                 print(f'Model saved to {model_name}')
-                run_evaluation(model_name,"test.csv", qna_bot, test_dataset, 25)
+                #run_evaluation(model_name,"test.csv", qna_bot, test_dataset, 25)
 
 
 if __name__ == '__main__':
