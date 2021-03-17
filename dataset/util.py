@@ -44,7 +44,7 @@ def load_data_into_df():
 
 
 def tokenize(sentence):
-    soup_sentence = BeautifulSoup(sentence)
+    soup_sentence = BeautifulSoup(sentence, features="html.parser")
     text_sentence = soup_sentence.get_text()
     doc_sentence = dataConfig.nlp(text_sentence)
     return [token.lower_ for token in doc_sentence]
@@ -72,7 +72,6 @@ def extract_question_and_answer(df):
                 q_title = tokenize(row.Title)
             except UnicodeEncodeError:
                 continue
-            q_title
 
             if len(q_title) > dataConfig.max_q_title_len or len(q_title) == 0:
                 continue
@@ -145,7 +144,7 @@ def save_to_pickle():
                    "q_titles_ref": q_titles_ref,
                    "src_vocab": src_vocab,
                    "tgt_vocab": tgt_vocab}
-    with open('../data/question_title_body_1000_words.p', "wb") as fp:
+    with open('../data/question_title_body_1000_words_new.p', "wb") as fp:
         pickle.dump(pickle_dict, fp, protocol=pickle.HIGHEST_PROTOCOL)
 
 if __name__ == '__main__':

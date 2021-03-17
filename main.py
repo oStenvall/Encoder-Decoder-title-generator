@@ -4,14 +4,14 @@ import torch
 
 from dataset.TitleQuestionTestDataset import TitleQuestionTestDataset
 from dataset.TitleQuestionTrainDataset import TitleQuestionTrainDataset
-from eval.evalutation import run_evaluation, evaluate_random_baseline
+from eval.evalutation import run_evaluation, evaluate_random_baseline, load_models_and_calculate_avg_seq_len
 from models.attention_models import BahdanauAttention
 from test_functions import load_models_and_print_example_titles_for_best_models
 from train import train
 
 
 def main():
-    file = open('data/question_title_body_1000_words.p', "rb")
+    file = open('data/question_title_body_1000_words_new.p', "rb")
     data_and_vocab = pickle.load(file)
     src_vocab = data_and_vocab["src_vocab"]
     tgt_vocab = data_and_vocab["tgt_vocab"]
@@ -48,11 +48,10 @@ def main():
     bidirectional_encoding = True
     directions = [not bidirectional_encoding, bidirectional_encoding]
     direction_dict = {True: "bidirectional", False: "single"}
-    #load_models_and_print_example_titles_for_best_models(src_vocab,tgt_vocab,test_dataset)
+    load_models_and_calculate_avg_seq_len(src_vocab,tgt_vocab,test_dataset)
     #load_models_and_calculate_rouge(src_vocab,tgt_vocab, test_dataset)
     #attention = BahdanauAttention(hidden_dim=h, bidirectional_enc=d)
     #qna_bot = QuestionAnswerer(src_vocab, tgt_vocab, attention, h, e, d)
-
     for d in directions:
          for h in hidden_dims:
              for e in embedding_dims:
@@ -69,7 +68,7 @@ def main():
                             'i2w': qna_bot.i2w}, "saved_models/" + model_name)
                 sample_input = val_dataset.create_sample_tensor(["what", "is", "<", "operator", "?"], 10)
                 print(["what", "is", "<", "operator", "in", "python" ,"?"])
-                print(qna_bot.generate_answers(sample_input, 10))
+                print(qna_bot.generate_titles(sample_input, 10))
                 print(f'Model saved to {model_name}')
                 #run_evaluation(model_name,"test.csv", qna_bot, test_dataset, 25)
 

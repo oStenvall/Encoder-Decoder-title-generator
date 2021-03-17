@@ -1,15 +1,9 @@
-import pickle
 import random
 from pathlib import Path
 
 import torch
 
-from dataset.TitleQuestionTestDataset import TitleQuestionTestDataset
-from dataset.TitleQuestionTrainDataset import TitleQuestionTrainDataset, example
-from eval.evalutation import run_evaluation
-from models.Decoder import Decoder
-from models.Encoder import Encoder
-from models.EncoderDecoder import EncoderDecoder
+from dataset.TitleQuestionTrainDataset import example
 from models.TitleGenerator import TitleGenerator
 from models.attention_models import BahdanauAttention
 from models.random_baseline import generate_random_titles
@@ -26,13 +20,13 @@ def get_example_batches(dataset, batch_size):
     return batch_src, batch_tgt
 
 
-def print_encoder_decoder_shape( encoder, decoder,dataset, batch_size=10):
+def print_encoder_decoder_shape(encoder, decoder,dataset, batch_size=10):
 
     batch_src, batch_tgt = get_example_batches(dataset, batch_size)
     print("Input batch:    " + str(batch_src.shape))
     print("Target batch:   " + str(batch_tgt.shape))
     src_mask = (batch_src != 0)
-    out, hidden = encoder.forward(batch_src)
+    out, hidden = encoder.decode(batch_src)
     print("Encoder output: " + str(out.shape))
     print("Encoder hidden: " + str(hidden.shape))
     output = decoder.forward(encoder_output=out,
@@ -56,7 +50,7 @@ def test_random_baseline(tgt_vocab,max_len, n_samples):
 
 
 def print_example_output(titleGen, dataset):
-    test_indecies = [25, 92, 182, 768, 1000, 97, 1, 5, 7]
+    test_indecies = [25, 92, 182, 768, 1000, 97, 1, 5, 7, ]
     for i in test_indecies:
         src_sequence = dataset.get_src_sequence_by_idx(i)
         try:
@@ -65,9 +59,9 @@ def print_example_output(titleGen, dataset):
         except ValueError:
             original_question = ' '.join(src_sequence)
         encoder_input, ref_title = dataset[i]
-        print(f'Reference title: {original_question}')
-        gen_title = titleGen.generate_answers(encoder_input, 10)
-        print(f'Generated title: {gen_title}')
+        print(f'Reference title: {ref_title.replace("<eos>", "")}')
+        gen_title = titleGen.generate_titles(encoder_input, 10)
+        print(f'Generated title: {gen_title[0][0]}')
         print("Question body")
         print(original_question)
         print('------------------')
@@ -83,7 +77,13 @@ def load_models_and_print_example_titles_for_best_models(src_vocab,tgt_vocab, te
     hidden_dims = [64, 256,64, 256]
     bidirectional = [True,True,False,False]
     for i in range(len(model_names)):
+
         model_name = model_names[i]
+        print('+++++++++++++++++++++++++++')
+        print('+++++++++++++++++++++++++++')
+        print(f'+++{model_name}+++')
+        print('+++++++++++++++++++++++++++')
+        print('+++++++++++++++++++++++++++')
         h = hidden_dims[i]
         bi = bidirectional[i]
         at = BahdanauAttention(hidden_dim=h, bidirectional_enc=bi)

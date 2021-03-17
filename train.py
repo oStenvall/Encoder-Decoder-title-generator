@@ -52,7 +52,7 @@ def train(src_vocab, tgt_vocab, attention, hidden_dim,
                         question_answerer.model.eval()
                         rouge_precision_avg, rouge_recall_avg, rouge_f1_avg = rouge(question_answerer, val_dataset, "rouge1")
                         sample_input = val_dataset.create_sample_tensor(["how", "do", "i","run", "python"], 100)
-                        sample = question_answerer.generate_answers(sample_input, 10)[0]
+                        sample = question_answerer.generate_titles(sample_input, 10)[0]
             if (epoch + 1) % 5 == 0:
                 if bidirectional:
                     model_name = f'bidirectional_hidden-{hidden_dim}_emb-{embedding_dim}'

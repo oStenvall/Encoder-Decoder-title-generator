@@ -16,7 +16,7 @@ class TitleGenerator(object):
         self.model = EncoderDecoder(len(src_vocab), len(tgt_vocab), attention
                                     ,hidden_dim, embedding_dim, bidirectional).to(device)
 
-    def generate_answers_with_attention(self, questions, max_len):
+    def generate_titles_with_attention(self, questions, max_len):
 
         # Run the decoder and convert the result into nested lists
         with torch.no_grad():
@@ -39,8 +39,8 @@ class TitleGenerator(object):
             result.append((' '.join(d), a))
         return dec_res  #, result
 
-    def generate_answers(self, questions, max_len):
-        return self.generate_answers_with_attention(questions, max_len)
+    def generate_titles(self, questions, max_len):
+        return self.generate_titles_with_attention(questions, max_len)
 
     def load(self, path):
         checkpoint = torch.load(path)

@@ -1,5 +1,3 @@
-import pdb
-
 import torch
 import torch.nn as nn
 
@@ -29,7 +27,7 @@ class Decoder(nn.Module):
         for i in range(tgt_len):
             # Get the embedding for the previous word (in each sentence)
             prev_embedded = embedded[:, i]
-            #print(prev_embedded.shape)
+
 
             # Take one step with the RNN
             output, hidden, alpha = self.step(encoder_output, hidden, src_mask, prev_embedded)
@@ -55,8 +53,7 @@ class Decoder(nn.Module):
             output, hidden, alpha = self.step(encoder_output, hidden, src_mask, prev_embedded)
 
             # Update the list of generated words and attention weights (in each sentence)
-            generated = output.argmax(-1)
-            generated.append(generated)
+            generated.append(output.argmax(-1))
             alphas.append(alpha)
 
         generated = [x.unsqueeze(1) for x in generated[1:]]
