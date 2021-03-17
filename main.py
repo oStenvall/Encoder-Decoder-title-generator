@@ -37,18 +37,13 @@ def main():
     test_dataset = TitleQuestionTestDataset(src_vocab, q_bodies_test, q_titles_ref_test)
     val_dataset = TitleQuestionTestDataset(src_vocab, q_bodies_val, q_titles_ref_val)
     train_dataset = TitleQuestionTrainDataset(src_vocab, tgt_vocab, q_bodies_train, q_titles_bos_train, q_titles_eos_train)
-    #attention = UniformAttention()
-    #enc = Encoder(vocab_size=len(src_vocab))
-    #attention = BahdanauAttention()
-    #dec = Decoder(vocab_size=len(tgt_vocab),attention=attention)
-    #print_encoder_decoder_shape(encoder=enc,decoder=dec,dataset=train_dataset,batch_size=10)
 
     hidden_dims = [64, 128, 256]
     embedding_dims = [100]
     bidirectional_encoding = True
     directions = [not bidirectional_encoding, bidirectional_encoding]
     direction_dict = {True: "bidirectional", False: "single"}
-    load_models_and_calculate_avg_seq_len(src_vocab,tgt_vocab,test_dataset)
+    #load_models_and_calculate_avg_seq_len(src_vocab,tgt_vocab,test_dataset)
     #load_models_and_calculate_rouge(src_vocab,tgt_vocab, test_dataset)
     #attention = BahdanauAttention(hidden_dim=h, bidirectional_enc=d)
     #qna_bot = QuestionAnswerer(src_vocab, tgt_vocab, attention, h, e, d)
@@ -70,7 +65,7 @@ def main():
                 print(["what", "is", "<", "operator", "in", "python" ,"?"])
                 print(qna_bot.generate_titles(sample_input, 10))
                 print(f'Model saved to {model_name}')
-                #run_evaluation(model_name,"test.csv", qna_bot, test_dataset, 25)
+                run_evaluation(model_name, "test.csv", qna_bot, test_dataset, 25)
 
 
 if __name__ == '__main__':
