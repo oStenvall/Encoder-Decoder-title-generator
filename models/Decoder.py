@@ -27,7 +27,7 @@ class Decoder(nn.Module):
         for i in range(tgt_len):
             # Get the embedding for the previous word (in each sentence)
             prev_embedded = embedded[:, i]
-            #print(prev_embedded.shape)
+
 
             # Take one step with the RNN
             output, hidden, alpha = self.step(encoder_output, hidden, src_mask, prev_embedded)

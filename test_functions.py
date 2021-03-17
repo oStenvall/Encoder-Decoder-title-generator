@@ -1,15 +1,12 @@
-import pickle
 import random
+from pathlib import Path
 
 import torch
 
-from dataset.QuestionAnswerTestDataset import QuestionAnswerTestDataset
-from dataset.QuestionAnswerTrainDataset import QuestionAnswerTrainDataset, example
-from models.Decoder import Decoder
-from models.Encoder import Encoder
-from models.EncoderDecoder import EncoderDecoder
-from models.QuestionAnswerer import QuestionAnswerer
+from dataset.TitleQuestionTrainDataset import example
+from models.TitleGenerator import TitleGenerator
 from models.attention_models import BahdanauAttention
+from models.random_baseline import generate_random_titles
 
 
 def get_example_batches(dataset, batch_size):
@@ -23,13 +20,13 @@ def get_example_batches(dataset, batch_size):
     return batch_src, batch_tgt
 
 
-def print_encoder_decoder_shape( encoder, decoder,dataset, batch_size=10):
+def print_encoder_decoder_shape(encoder, decoder,dataset, batch_size=10):
 
     batch_src, batch_tgt = get_example_batches(dataset, batch_size)
     print("Input batch:    " + str(batch_src.shape))
     print("Target batch:   " + str(batch_tgt.shape))
     src_mask = (batch_src != 0)
-    out, hidden = encoder.forward(batch_src)
+    out, hidden = encoder.decode(batch_src)
     print("Encoder output: " + str(out.shape))
     print("Encoder hidden: " + str(hidden.shape))
     output = decoder.forward(encoder_output=out,
@@ -47,42 +44,51 @@ def test_encoder_decoder_model(encoder_decoder, dataset, batch_size=10):
     print(alphas.shape)
 
 
-def test_QnA_bot(questionAnswerer, dataset, batch_size=10):
-
-    batch_src, batch_tgt = get_example_batches(dataset, batch_size)
-    answers = questionAnswerer.generate_answers(batch_src, batch_tgt.size(1))
-    for ans in answers:
-        print(ans)
+def test_random_baseline(tgt_vocab,max_len, n_samples):
+    for title in generate_random_titles(tgt_vocab, max_len, n_samples):
+        print(title)
 
 
-def test():
-    file = open('data/data.p', "rb")
-    data_and_vocab = pickle.load(file)
-    src_vocab = data_and_vocab["src_vocab"]
-    tgt_vocab = data_and_vocab["tgt_vocab"]
-    assert len(src_vocab) == len(tgt_vocab)
-    questions = data_and_vocab["questions"]
-    answer_inputs = data_and_vocab["answer_inputs"]
-    answer_targets = data_and_vocab["answer_targets"]
-    q_train = questions[:25000]
-    a_train_input = answer_inputs[:25000]
-    a_train_target = answer_targets[:25000]
-    q_val_input = questions[25000:]
-    a_val_input = answer_inputs[25000:]
-    a_val_tgt = answer_targets[25000:]
+def print_example_output(titleGen, dataset):
+    test_indecies = [25, 92, 182, 768, 1000, 97, 1, 5, 7, ]
+    for i in test_indecies:
+        src_sequence = dataset.get_src_sequence_by_idx(i)
+        try:
+            eos_index = src_sequence.index("<pad>")
+            original_question = ' '.join(src_sequence[:eos_index])
+        except ValueError:
+            original_question = ' '.join(src_sequence)
+        encoder_input, ref_title = dataset[i]
+        print(f'Reference title: {ref_title.replace("<eos>", "")}')
+        gen_title = titleGen.generate_titles(encoder_input, 10)
+        print(f'Generated title: {gen_title[0][0]}')
+        print("Question body")
+        print(original_question)
+        print('------------------')
+        print('---NEXT EXAMPLE---')
+        print('------------------')
 
-    val_dataset = QuestionAnswerTestDataset(src_vocab, q_val_input,a_val_tgt)
-    train_dataset = QuestionAnswerTrainDataset(src_vocab, tgt_vocab, q_train, a_train_input, a_train_target)
 
-    hidden_dim = 128
+def load_models_and_print_example_titles_for_best_models(src_vocab,tgt_vocab, test_dataset):
+    model_names = ['bidirectional_hidden-64_emb-100',
+              'bidirectional_hidden-256_emb-100',
+              'single_hidden-64_emb-100','single_hidden-256_emb-100']
     embedding_dim = 100
-    bidirectional_encoding = True
-    attention = BahdanauAttention(hidden_dim=hidden_dim, bidirectional_enc=bidirectional_encoding)
-    encoder_decoder = EncoderDecoder(src_vocab_size=len(src_vocab), tgt_vocab_size=len(tgt_vocab),
-                                    attention=attention, hidden_dim=hidden_dim, embedding_dim=embedding_dim,
-                                    bidirectional=bidirectional_encoding)
-    print("Test encoderDecoder model")
-    test_encoder_decoder_model(encoder_decoder, train_dataset)
-    q_n_a_bot = QuestionAnswerer(src_vocab, tgt_vocab, attention,
-                              hidden_dim, embedding_dim, bidirectional_encoding)
-    test_QnA_bot(q_n_a_bot, train_dataset, 1)
+    hidden_dims = [64, 256,64, 256]
+    bidirectional = [True,True,False,False]
+    for i in range(len(model_names)):
+
+        model_name = model_names[i]
+        print('+++++++++++++++++++++++++++')
+        print('+++++++++++++++++++++++++++')
+        print(f'+++{model_name}+++')
+        print('+++++++++++++++++++++++++++')
+        print('+++++++++++++++++++++++++++')
+        h = hidden_dims[i]
+        bi = bidirectional[i]
+        at = BahdanauAttention(hidden_dim=h, bidirectional_enc=bi)
+        titleGen = TitleGenerator(src_vocab, tgt_vocab, at, h, embedding_dim, bi)
+        path = Path('saved_models')/ model_name
+        titleGen.load(path)
+        titleGen.model.eval()
+        print_example_output(titleGen, test_dataset)

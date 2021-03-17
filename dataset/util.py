@@ -1,4 +1,6 @@
 import math
+import pdb
+
 import pandas as pd
 from bs4 import BeautifulSoup
 from pathlib import Path
@@ -10,8 +12,8 @@ from tqdm import tqdm
 
 class DataConfig:
     def __init__(self):
-        self.max_q_len = 10
-        self.max_a_len = 100
+        self.max_q_title_len = 10
+        self.max_q_body_len = 100
         self.PAD = '<pad>'
         self.BOS = '<bos>'
         self.EOS = '<eos>'
@@ -26,64 +28,88 @@ dataConfig = DataConfig()
 def load_data_into_df():
     path_q = Path('../data/Questions.csv')
     path_a = Path('../data/Answers.csv')
+    path_t = Path('../data/Tags.csv')
     questions_df = pd.read_csv(path_q, encoding='latin-1', nrows=150000)
     answers_df = pd.read_csv(path_a, encoding='latin-1', nrows=150000)
+    tags_df = pd.read_csv(path_t, encoding='latin-1', nrows=150000)
     answers_df = answers_df.drop_duplicates(subset=["ParentId"])
     combined_df = questions_df.join(answers_df.set_index("ParentId"), on="Id", lsuffix='_question', rsuffix='_answer')
+    #tags_grouped = tags_df.groupby('Id', as_index=False).agg(lambda x: x.tolist())
+    tags_df = tags_df[tags_df['Tag'].str.contains("python", na=False)]
+    combined_df = combined_df.join(tags_df.set_index('Id'), on="Id_question")
+    combined_df = combined_df[combined_df["Tag"].notna()]
     combined_df = combined_df[combined_df['Id_answer'].notna()]
-    combined_df = combined_df[combined_df['Body_answer'].notna()]
+    combined_df = combined_df[combined_df['Body_question'].notna()]
     return combined_df
 
 
 def tokenize(sentence):
-    soup_sentence = BeautifulSoup(sentence)
+    soup_sentence = BeautifulSoup(sentence, features="html.parser")
     text_sentence = soup_sentence.get_text()
     doc_sentence = dataConfig.nlp(text_sentence)
     return [token.lower_ for token in doc_sentence]
 
 
 def add_padding(tokens, max_len):
-    padding = [dataConfig.PAD] * (max_len - len(tokens))
+    if len(tokens) < max_len:
+        padding = [dataConfig.PAD] * (max_len - len(tokens))
+    else:
+        padding = []
     return tokens + padding
 
 
 def extract_question_and_answer(df):
-    questions = []
-    answers_input = []
-    answers_target = []
+    q_titles_eos = []
+    q_titles_bos = []
+    q_bodies = []
+    q_titles_ref = []
     with tqdm(total=df.shape[0]) as pbar:
         for i, row in df.iterrows():
             if i % 1000 == 0:
                 pbar.update(1000)
 
-            q_tokens = tokenize(row.Title)
-            if len(q_tokens) > dataConfig.max_q_len or len(q_tokens) == 0:
+            try:
+                q_title = tokenize(row.Title)
+            except UnicodeEncodeError:
                 continue
 
-            q_tokens = q_tokens
-            if len(q_tokens) < dataConfig.max_q_len:
-                q_tokens = add_padding(q_tokens, dataConfig.max_q_len)
-
-            a_tokens_input = tokenize(row.Body_answer)
-            a_tokens_target = tokenize(row.Body_answer)
-            if len(a_tokens_input) > dataConfig.max_a_len or len(a_tokens_input) == 0:
+            if len(q_title) > dataConfig.max_q_title_len or len(q_title) == 0:
                 continue
 
-            a_tokens_input = [dataConfig.BOS] + a_tokens_input
-            a_tokens_target = a_tokens_target #+ [dataConfig.EOS]
-            max_a_len_with_pseudo_word = dataConfig.max_a_len + 1
-            if len(a_tokens_input) < max_a_len_with_pseudo_word:
-                a_tokens_input = add_padding(a_tokens_input, max_a_len_with_pseudo_word)
-                #a_tokens_target = add_padding(a_tokens_target, max_a_len_with_pseudo_word)
+            q_title_bos = [dataConfig.BOS]
+            q_title_bos += q_title
+            q_title_bos += [dataConfig.EOS]
+            q_title_eos = q_title
+            q_title_eos += [dataConfig.EOS]
+            #pdb.set_trace()
+            if len(q_title_bos) < dataConfig.max_q_title_len + 2:
+                q_title_bos = add_padding(q_title_bos, dataConfig.max_q_title_len + 2)
+            if len(q_title_eos) < dataConfig.max_q_title_len + 2:
+                q_title_eos = add_padding(q_title_eos, dataConfig.max_q_title_len + 2)
+            #pdb.set_trace()
+            try:
+                q_body = tokenize(row.Body_question)
+            except UnicodeEncodeError:
+                continue
 
-            assert len(a_tokens_input) == max_a_len_with_pseudo_word
-            assert len(q_tokens) == dataConfig.max_q_len
+            if len(q_body) > dataConfig.max_q_body_len or len(q_body) == 0:
+                continue
 
-            questions.append(q_tokens)
-            answers_input.append(a_tokens_input)
-            answers_target.append(a_tokens_target)
+            q_body = q_body
+            if len(q_body) < dataConfig.max_q_body_len:
+                q_body = add_padding(q_body, dataConfig.max_q_body_len)
 
-    return questions, answers_input, answers_target
+
+            assert len(q_body) == dataConfig.max_q_body_len
+            assert len(q_title_eos) == dataConfig.max_q_title_len + 2
+            assert len(q_title_bos) == dataConfig.max_q_title_len + 2
+
+            q_titles_bos.append(q_title_bos)
+            q_titles_eos.append(q_title_eos)
+            q_bodies.append(q_body)
+            q_titles_ref.append(q_title)
+
+    return q_titles_bos, q_titles_eos, q_bodies, q_titles_ref
 
 
 def make_vocab(sequences, max_size):
@@ -94,6 +120,8 @@ def make_vocab(sequences, max_size):
     for sequence in sequences:
         for token in sequence:
             if token not in dataConfig.pseudowords:
+                if type(token) == list:
+                    pdb.set_trace()
                 if token not in vocab_with_counter:
                     vocab_with_counter[token] = {'count': 1, 'index': index}
                     index += 1
@@ -106,21 +134,18 @@ def make_vocab(sequences, max_size):
 
 def save_to_pickle():
     df = load_data_into_df()
-    questions, answer_inputs, answer_targets = extract_question_and_answer(df)
-    src_vocab = make_vocab(questions, 10000)
-    tgt_vocab = make_vocab(answer_inputs, 10000)
+    q_titles_bos, q_titles_eos, q_bodies, q_titles_ref = extract_question_and_answer(df)
+    src_vocab = make_vocab(q_bodies, 1000)
+    tgt_vocab = make_vocab(q_titles_bos, 1000)
 
-    pickle_dict = {"questions": questions,
-                   "answer_inputs": answer_inputs,
-                   "answer_targets": answer_targets,
+    pickle_dict = {"q_titles_bos": q_titles_bos,
+                   "q_titles_eos": q_titles_eos,
+                   "q_bodies": q_bodies,
+                   "q_titles_ref": q_titles_ref,
                    "src_vocab": src_vocab,
                    "tgt_vocab": tgt_vocab}
-    with open('../data/data.p', "wb") as fp:
+    with open('../data/question_title_body_1000_words_new.p', "wb") as fp:
         pickle.dump(pickle_dict, fp, protocol=pickle.HIGHEST_PROTOCOL)
-
-
-
-
 
 if __name__ == '__main__':
     save_to_pickle()
