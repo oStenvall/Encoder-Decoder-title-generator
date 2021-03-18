@@ -10,7 +10,7 @@ from train import train
 
 
 def main():
-    file = open('data/question_title_body_1000_words_new.p', "rb")
+    file = open('data/question_title_pairs_1000_words.p', "rb")
     data_and_vocab = pickle.load(file)
     src_vocab = data_and_vocab["src_vocab"]
     tgt_vocab = data_and_vocab["tgt_vocab"]
