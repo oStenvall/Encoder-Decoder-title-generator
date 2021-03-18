@@ -6,5 +6,5 @@ Install dependencies from requirements.txt
 Run python main.py
 
 ## HOW TO EVALUATE A SAVED MODEL
-See functions in test_functions.py
+Run load_models_and_print_example_titles_for_best_models() located in test_functions.py
  
