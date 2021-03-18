@@ -11,21 +11,21 @@ from models.random_baseline import generate_random_titles
 
 def get_average_length_of_generated_sequences(model_name, title_gen, dataset, print_ref_avg_len=False):
     src, ref_batch = dataset.get_all_examples()
-    answers = title_gen.generate_titles(src, 10)
+    generated_titles = title_gen.generate_titles(src, 10)
     avg_len = 0
     ref_avg_len = 0
-    for i in range(len(answers)):
+    for i in range(len(generated_titles)):
         if print_ref_avg_len:
             ref_title = ref_batch[i].split(' ')
             ref_avg_len += len(ref_title) - 1
 
-        ans_list = answers[i][0].split(' ')
+        ans_list = generated_titles[i][0].split(' ')
         avg_len += len(ans_list)
 
     if print_ref_avg_len:
         ref_avg_len = ref_avg_len / len(ref_batch)
         print(f"Average true title length: {ref_avg_len}")
-    avg_len = avg_len / len(answers)
+    avg_len = avg_len / len(generated_titles)
 
     print(f"Model name: {model_name}, average sequence length {avg_len}")
 
@@ -48,10 +48,10 @@ def run_evaluation(model_name, file, title_gen, dataset, epoch, rouge_types, tgt
             csv_file.close()
 
 
-def rouge(question_answerer, dataset, rouge_type, random=False, tgt_vocab=None):
+def rouge(title_generator, dataset, rouge_type, random=False, tgt_vocab=None):
     if not random:
         src, ref_batch = dataset.get_all_examples()
-        answers = question_answerer.generate_titles(src, 10)
+        answers = title_generator.generate_titles(src, 10)
     else:
         _, ref_batch = dataset.get_all_examples()
         answers = generate_random_titles(tgt_vocab, 10, len(ref_batch))

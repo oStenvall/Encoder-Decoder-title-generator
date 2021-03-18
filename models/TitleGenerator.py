@@ -14,13 +14,13 @@ class TitleGenerator(object):
         self.i2w = {i: w for w, i in self.tgt_vocab.items()}
         self.device = device
         self.model = EncoderDecoder(len(src_vocab), len(tgt_vocab), attention
-                                    ,hidden_dim, embedding_dim, bidirectional).to(device)
+                                    , hidden_dim, embedding_dim, bidirectional).to(device)
 
     def generate_titles_with_attention(self, questions, max_len):
 
         # Run the decoder and convert the result into nested lists
         with torch.no_grad():
-            decoded, alphas = tuple(d.cpu().numpy().tolist() for d in self.model.decode(questions,  max_len))
+            decoded, alphas = tuple(d.cpu().numpy().tolist() for d in self.model.decode(questions, max_len))
 
         # Prune each decoded sentence after the first <eos>
         result = []
@@ -37,7 +37,7 @@ class TitleGenerator(object):
             dec_res.append([(' '.join(d))])
             dec_res_list.append(d)
             result.append((' '.join(d), a))
-        return dec_res  #, result
+        return dec_res  # , result
 
     def generate_titles(self, questions, max_len):
         return self.generate_titles_with_attention(questions, max_len)
@@ -49,4 +49,3 @@ class TitleGenerator(object):
         self.src_vocab = checkpoint['src_vocab']
         self.tgt_vocab = checkpoint['device']
         self.i2w = checkpoint['i2w']
-

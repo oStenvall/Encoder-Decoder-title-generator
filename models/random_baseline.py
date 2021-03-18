@@ -3,7 +3,7 @@ import random
 
 def generate_random_titles(tgt_vocab, max_len, n_samples):
     generated_titles = []
-    inv_tgt_vocab = {i:w for w, i in tgt_vocab.items()}
+    inv_tgt_vocab = {i: w for w, i in tgt_vocab.items()}
     for _ in range(n_samples):
         title = ""
         for _ in range(max_len):

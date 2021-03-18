@@ -34,7 +34,7 @@ def load_data_into_df():
     tags_df = pd.read_csv(path_t, encoding='latin-1', nrows=150000)
     answers_df = answers_df.drop_duplicates(subset=["ParentId"])
     combined_df = questions_df.join(answers_df.set_index("ParentId"), on="Id", lsuffix='_question', rsuffix='_answer')
-    #tags_grouped = tags_df.groupby('Id', as_index=False).agg(lambda x: x.tolist())
+    # tags_grouped = tags_df.groupby('Id', as_index=False).agg(lambda x: x.tolist())
     tags_df = tags_df[tags_df['Tag'].str.contains("python", na=False)]
     combined_df = combined_df.join(tags_df.set_index('Id'), on="Id_question")
     combined_df = combined_df[combined_df["Tag"].notna()]
@@ -81,12 +81,12 @@ def extract_question_and_answer(df):
             q_title_bos += [dataConfig.EOS]
             q_title_eos = q_title
             q_title_eos += [dataConfig.EOS]
-            #pdb.set_trace()
+            # pdb.set_trace()
             if len(q_title_bos) < dataConfig.max_q_title_len + 2:
                 q_title_bos = add_padding(q_title_bos, dataConfig.max_q_title_len + 2)
             if len(q_title_eos) < dataConfig.max_q_title_len + 2:
                 q_title_eos = add_padding(q_title_eos, dataConfig.max_q_title_len + 2)
-            #pdb.set_trace()
+            # pdb.set_trace()
             try:
                 q_body = tokenize(row.Body_question)
             except UnicodeEncodeError:
@@ -98,7 +98,6 @@ def extract_question_and_answer(df):
             q_body = q_body
             if len(q_body) < dataConfig.max_q_body_len:
                 q_body = add_padding(q_body, dataConfig.max_q_body_len)
-
 
             assert len(q_body) == dataConfig.max_q_body_len
             assert len(q_title_eos) == dataConfig.max_q_title_len + 2
@@ -144,8 +143,9 @@ def save_to_pickle():
                    "q_titles_ref": q_titles_ref,
                    "src_vocab": src_vocab,
                    "tgt_vocab": tgt_vocab}
-    with open('../data/question_title_body_1000_words_new.p', "wb") as fp:
+    with open('../data/question_title_pairs_1000_words.p', "wb") as fp:
         pickle.dump(pickle_dict, fp, protocol=pickle.HIGHEST_PROTOCOL)
+
 
 if __name__ == '__main__':
     save_to_pickle()

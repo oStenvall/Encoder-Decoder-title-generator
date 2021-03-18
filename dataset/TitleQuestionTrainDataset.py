@@ -10,7 +10,8 @@ class TitleQuestionTrainDataset(Dataset):
         # <pad> (0) <bos> (1), <eos> (2), and <unk> (3).
         self.encoder_input = [[self.src_vocab.get(w, 3) for w in s] for s in src_sequences]
         self.decoder_input = [[self.tgt_vocab.get(w, 3) for w in s] for s in tgt_input_sequences]
-        self.decoder_tgt   = [[self.tgt_vocab.get(w, 3) for w in s] for s in tgt_output_sequences]
+        self.decoder_tgt = [[self.tgt_vocab.get(w, 3) for w in s] for s in tgt_output_sequences]
+
     def __getitem__(self, idx):
         return self.encoder_input[idx], self.decoder_input[idx], self.decoder_tgt[idx]
 

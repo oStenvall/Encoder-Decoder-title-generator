@@ -38,6 +38,3 @@ class TitleQuestionTestDataset(Dataset):
 
     def get_all_examples(self):
         return torch.LongTensor(self.encoder_input), self.ref_sentence
-
-
-

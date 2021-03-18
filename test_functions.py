@@ -20,8 +20,7 @@ def get_example_batches(dataset, batch_size):
     return batch_src, batch_tgt
 
 
-def print_encoder_decoder_shape(encoder, decoder,dataset, batch_size=10):
-
+def print_encoder_decoder_shape(encoder, decoder, dataset, batch_size=10):
     batch_src, batch_tgt = get_example_batches(dataset, batch_size)
     print("Input batch:    " + str(batch_src.shape))
     print("Target batch:   " + str(batch_tgt.shape))
@@ -44,7 +43,7 @@ def test_encoder_decoder_model(encoder_decoder, dataset, batch_size=10):
     print(alphas.shape)
 
 
-def test_random_baseline(tgt_vocab,max_len, n_samples):
+def test_random_baseline(tgt_vocab, max_len, n_samples):
     for title in generate_random_titles(tgt_vocab, max_len, n_samples):
         print(title)
 
@@ -69,15 +68,14 @@ def print_example_output(titleGen, dataset):
         print('------------------')
 
 
-def load_models_and_print_example_titles_for_best_models(src_vocab,tgt_vocab, test_dataset):
+def load_models_and_print_example_titles_for_best_models(src_vocab, tgt_vocab, test_dataset):
     model_names = ['bidirectional_hidden-64_emb-100',
-              'bidirectional_hidden-256_emb-100',
-              'single_hidden-64_emb-100','single_hidden-256_emb-100']
+                   'bidirectional_hidden-256_emb-100',
+                   'single_hidden-64_emb-100', 'single_hidden-256_emb-100']
     embedding_dim = 100
-    hidden_dims = [64, 256,64, 256]
-    bidirectional = [True,True,False,False]
+    hidden_dims = [64, 256, 64, 256]
+    bidirectional = [True, True, False, False]
     for i in range(len(model_names)):
-
         model_name = model_names[i]
         print('+++++++++++++++++++++++++++')
         print('+++++++++++++++++++++++++++')
@@ -88,7 +86,7 @@ def load_models_and_print_example_titles_for_best_models(src_vocab,tgt_vocab, te
         bi = bidirectional[i]
         at = BahdanauAttention(hidden_dim=h, bidirectional_enc=bi)
         titleGen = TitleGenerator(src_vocab, tgt_vocab, at, h, embedding_dim, bi)
-        path = Path('saved_models')/ model_name
+        path = Path('saved_models') / model_name
         titleGen.load(path)
         titleGen.model.eval()
         print_example_output(titleGen, test_dataset)
