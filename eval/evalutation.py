@@ -1,9 +1,7 @@
 import csv
 import os
 from pathlib import Path
-
 from rouge_score import rouge_scorer
-
 from models.TitleGenerator import TitleGenerator
 from models.attention_models import BahdanauAttention
 from models.random_baseline import generate_random_titles
