@@ -3,12 +3,12 @@
 pip install -r requirements.txt
 ```
 ## How to train
-To train 6 different models with default parameters set in main.py\
+Run the following:
 
 ```python 
 python main.py
 ```
-
+to train 6 different models with default parameters set in main.py
 ## How to evaluate a saved model
 
 ```python
